@@ -76,12 +76,6 @@ function logStatus(processDetail) {
 
 function publishStatus(running, pending, totaljobs, items) {
     if (client) {
-        items.sort((a, b) => {
-            if (a.runtime < b.runtime) return 1;
-            if (a.runtime > b.runtime) return -1;
-            return 0;
-        })
-
         client.publish('transcodes', JSON.stringify({
             totaljobs,
             running,
@@ -171,6 +165,19 @@ const main = async () => {
     });
 
     Promise.all(waitingFor).then(() => {
+        processData.sort((a, b) => {
+            if (a.runtime < b.runtime) return 1;
+            if (a.runtime > b.runtime) return -1;
+
+
+            // Make sorting on pending items consistent 
+            if (a.runtime == b.runtime) {
+                return a.jobName.localeCompare(b.jobName);
+            }
+
+            return 0;
+        });
+
         publishStatus(running, pending, totaljobs, processData);
     });
 };
