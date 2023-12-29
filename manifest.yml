@@ -1,0 +1,65 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: transcode
+  name: job-manager
+rules:
+- apiGroups: ["batch"]
+  resources: ["jobs", "cronjobs"]
+  verbs: ["*"]
+- apiGroups: [""] 
+  resources: ["pods", "pods/log"]
+  verbs: ["get", "watch", "list"]
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: transcode-watcher
+
+--- 
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  namespace: transcode
+  name: transcode-watcher
+subjects:
+  - kind: ServiceAccount
+    name: transcode-watcher
+roleRef:
+  kind: Role
+  name: job-manager
+  apiGroup: rbac.authorization.k8s.io
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transcode-watcher
+  namespace: transcode
+spec:
+  selector:
+    matchLabels:
+      app: transcode-watcher
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: transcode-watcher
+    spec:
+      serviceAccountName: transcode-watcher
+      containers:
+      - name: watcher
+        image: registry.lan.spikedhand.com/testing/transcode-watcher
+        resources:
+          requests:
+            cpu: '20m'
+            memory: '70Mi'
+          limits:
+            cpu: '200m'
+            memory: '1Gi'
+        env:
+          - name: "MQTT_BROKER"
+            value: SETME

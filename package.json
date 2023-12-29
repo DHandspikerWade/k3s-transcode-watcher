@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@kubernetes/client-node": "^0.20.0",
+    "mqtt": "^5.3.4"
+  }
+}
