@@ -150,7 +150,8 @@ const main = async () => {
                 if (handbrakeOutput) {
                     processDetail.handbrakeState = handbrakeOutput.State;
 
-                    if (handbrakeOutput.Working) {
+                    // Check the state to prevent artificial progress spikes during scanning
+                    if (handbrakeOutput.State === 'WORKING' && handbrakeOutput.Working) {
                         processDetail.eta = handbrakeOutput.Working.ETASeconds;
 
                         // Round to two decimal point
