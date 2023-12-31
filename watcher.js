@@ -71,7 +71,7 @@ async function getPodFromJob(job) {
 }
 
 function logStatus(processDetail) {
-
+    console.log('JOB: %s, FILE: "%s", PROGRESS: %d%', processDetail.jobName, processDetail.filename, processDetail.handbrakeProgress);
 }
 
 function publishStatus(running, pending, totaljobs, items) {
