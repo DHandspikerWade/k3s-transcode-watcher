@@ -19,6 +19,11 @@ console.log('Using found context: ', JSON.stringify(k8sContext));
 async function getHandBrakeStatus(pod) {
     const updates = [];
 
+    // Requesting logs will fail if Pod isn't running yet. 
+    if (pod.status.phase !== 'Running') {
+        return;
+    }
+
     // Grab up to 50 of the last lines within the last 500 seconds
     const response = await k8sCoreApi.readNamespacedPodLog(pod.metadata.name, pod.metadata.namespace,undefined,false,undefined,undefined,undefined,undefined,500, 50);
     
@@ -39,7 +44,7 @@ async function getHandBrakeStatus(pod) {
 
 async function getJobs() {
     const response = await k8sBatchApi.listNamespacedJob(k8sContext.namespace || 'default', 'false', undefined, undefined,undefined, 'transcode_hash');
-
+    
     const jobs = [];
     response.body.items.forEach(function (job) {
         if (!('transcode_hash' in job.metadata.labels)) {
