@@ -24,8 +24,16 @@ async function getHandBrakeStatus(pod) {
         return;
     }
 
-    // Grab up to 50 of the last lines within the last 500 seconds
-    const response = await k8sCoreApi.readNamespacedPodLog(pod.metadata.name, pod.metadata.namespace,undefined,false,undefined,undefined,undefined,undefined,500, 50);
+    for (let i; i < pod.status.conditions.length; i++) {
+        if (pod.status.conditions[i].type == "Ready" && pod.status.conditions[i].status == "False") {
+            // Pod in running state but not ready. Usually caused by a down node. 
+            return;
+        }
+    }
+
+    try {
+        // Grab up to 30 of the last lines within the last 60 seconds
+        const response = await k8sCoreApi.readNamespacedPodLog(pod.metadata.name, pod.metadata.namespace,undefined,false,undefined,undefined,undefined, undefined, 60, 30);
     
     if (response.body) {
         let logChunks = response.body.split('Progress: {');
@@ -37,6 +45,10 @@ async function getHandBrakeStatus(pod) {
                 // incomplete JSON, ignore it
             }
         });
+        }
+    } catch (error) {
+        console.log("Failed to read logs for " + pod.metadata.name);
+        console.error(error);
     }
 
     return updates.length ? updates.pop() : null;
