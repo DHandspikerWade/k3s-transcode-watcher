@@ -81,7 +81,23 @@ async function getPodFromJob(job) {
     );
 
     if (response.body.items.length > 0) {
-        return response.body.items[0];
+
+        let currentPod;
+        for (let index = 0; index < response.body.items.length; index++) {
+            const pod = response.body.items[index];
+
+            if ((!currentPod || currentPod.status.phase == 'Failed') && pod.status.phase == 'Failed') {
+                // Only use failed pod, if it's the only pod or replaced another failed pod
+                currentPod = pod;
+            }
+
+            if (pod.status.phase !== 'Failed') {
+                currentPod = pod;
+                break;
+            }
+        }
+        
+        return currentPod;
     }
 
     return null;
