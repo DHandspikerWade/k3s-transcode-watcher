@@ -5,10 +5,9 @@ steps:
     repo: handspiker2/transcode-watcher
     tags: latest
     auto_labels: false
-    settings:
-      username:
-        from_secret: docker_username
-      password: 
+    username:
+      from_secret: docker_username
+    password: 
       from_secret: docker_password
     platforms: linux/amd64
   when:
