@@ -1,0 +1,46 @@
+steps:
+- name: Build  
+  image: woodpeckerci/plugin-docker-buildx
+  settings:
+    repo: handspiker2/transcode-watcher
+    tags: latest
+    auto_labels: false
+    settings:
+      username:
+        from_secret: docker_username
+      password: 
+      from_secret: docker_password
+    platforms: linux/amd64
+  when:
+    branch:
+    - ${CI_REPO_DEFAULT_BRANCH}
+    event: [push, manual]
+
+- name: deploy
+  image: handspiker2/ci-tools:docker
+  environment:
+    KUBERNETES_SERVER:
+      from_secret: kubernetes_server
+    KUBERNETES_TOKEN:
+      from_secret: kubernetes_token
+    KUBERNETES_CERT:
+      from_secret: kubernetes_cert
+    NAMESPACE: 
+      from_secret: kubernetes_namespace
+    DEPLOYMENT: 
+      from_secret: kubernetes_deployment
+  commands:
+    - SHA256_TAG=$$(skopeo inspect docker://docker.io/handspiker2/transcode-watcher:latest | jq -r .Digest)
+    - kubectl config set-credentials default --token=$$(echo "$$KUBERNETES_TOKEN"  | base64 -d)
+    - echo $$KUBERNETES_CERT | base64 -d > ca.crt
+    - kubectl config set-cluster default --server=$$KUBERNETES_SERVER --certificate-authority=ca.crt
+    - kubectl config set-context default --cluster=default --user=default
+    - kubectl config use-context default
+    - 'echo "INFO: Starting Kubernetes resources update"'
+    - kubectl -n $$NAMESPACE set image deployment/$$DEPLOYMENT watcher=docker.io/handspiker2/transcode-watcher@$$SHA256_TAG
+    - 'echo "INFO: Waiting for changes to be performed"'
+    - kubectl -n $$NAMESPACE rollout status --timeout=60s deployment/$$DEPLOYMENT
+  when:
+    branch:
+    - ${CI_REPO_DEFAULT_BRANCH}
+    event: [push, manual]
