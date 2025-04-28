@@ -134,6 +134,7 @@ const main = async () => {
     jobs.forEach(function(job) {
         
         waitingFor[waitingFor.length] = new Promise(async (resolve, reject) => {
+            let handbrakeOutput; 
             const pod = await getPodFromJob(job);
             const processDetail = {
                 jobName: job.metadata.name,
@@ -161,6 +162,8 @@ const main = async () => {
                 switch (pod.status.phase) {
                     case 'Running':
                         running++;
+                        // Don't waste time reading pending pods, it causes multi-second delays in large numbers (ex: >50)
+                        handbrakeOutput = await getHandBrakeStatus(pod);
                         break;
                     case 'Pending':
                         pending++;
@@ -173,7 +176,6 @@ const main = async () => {
                     }
                 });
 
-                const handbrakeOutput = await getHandBrakeStatus(pod);
                 if (handbrakeOutput) {
                     processDetail.handbrakeState = handbrakeOutput.State;
 
